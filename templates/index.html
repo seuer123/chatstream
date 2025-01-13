@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>AI 问答</h1>
+        </header>
+        
+        <div class="chat-container">
+            <div class="messages" id="messages"></div>
+            
+            <form id="chat-form" class="input-form">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="请输入您的问题..."
+                    autocomplete="off"
+                >
+                <button type="submit">
+                    发送
+                    <span class="button-icon">→</span>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html> 
