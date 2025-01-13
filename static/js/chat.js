@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const userInput = document.getElementById('user-input');
     let keywords = [];
     let currentResponse = '';
-    let contexts = [];  // 存储上下文信息
+    let references = [];  // 存储参考文档
     
     socket.on('connect', function() {
         console.log('Connected to server');
@@ -15,8 +15,21 @@ document.addEventListener('DOMContentLoaded', function() {
         keywords = data;
     });
     
-    socket.on('contexts', function(data) {
-        contexts = data;
+    socket.on('references', function(data) {
+        references = data;
+        // 显示检索结果
+        const chunksDiv = document.getElementById('chunks');
+        chunksDiv.innerHTML = '';
+        
+        data.forEach((doc, index) => {
+            const chunkDiv = document.createElement('div');
+            chunkDiv.className = 'chunk';
+            chunkDiv.innerHTML = `
+                <div class="chunk-number">参考文档 ${index + 1}</div>
+                <div class="chunk-content">${doc.content}</div>
+            `;
+            chunksDiv.appendChild(chunkDiv);
+        });
     });
     
     socket.on('content', function(char) {
@@ -57,18 +70,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function processResponse(text) {
-        // 先处理引用
-        let processedText = text.replace(/【(.*?)】\^(\d+)/g, (match, content, index) => {
-            const contextIndex = parseInt(index) - 1;
-            const tooltip = contexts[contextIndex] ? contexts[contextIndex].text : '未找到原文';
-            return `<span class="reference" title="${tooltip}">【${content}】</span>`;
+        // 先获取所有参考文档的内容
+        const docContents = references.map(doc => doc.content);
+        
+        // 处理文本，查找与参考文档匹配的内容
+        let processedText = text;
+        docContents.forEach((docContent, index) => {
+            // 将文档内容分成句子，保留分隔符
+            const sentences = docContent.split(/([。！？.!?])/);
+            
+            // 每两个元素组合成一个完整的句子（包含标点符号）
+            for(let i = 0; i < sentences.length - 1; i += 2) {
+                const sentence = sentences[i] + (sentences[i + 1] || '');
+                if (sentence.trim()) {
+                    // 转义正则表达式中的特殊字符
+                    const escapedSentence = sentence.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escapedSentence, 'g');
+                    
+                    if (processedText.includes(sentence.trim())) {
+                        processedText = processedText.replace(
+                            regex,
+                            (match) => `<span class="reference" data-reference="${docContent}">${match}<sup>[${index + 1}]</sup></span>`
+                        );
+                    }
+                }
+            }
         });
         
-        // 再处理关键词高亮
+        // 处理关键词高亮
         keywords.forEach(keyword => {
             if (keyword && keyword.length > 0) {
-                let parts = processedText.split(keyword);
-                processedText = parts.join(`<span class="highlight">${keyword}</span>`);
+                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedKeyword, 'g');
+                processedText = processedText.replace(
+                    regex, 
+                    `<span class="highlight">${keyword}</span>`
+                );
             }
         });
         
