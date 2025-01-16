@@ -75,26 +75,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 处理文本，查找与参考文档匹配的内容
         let processedText = text;
-        docContents.forEach((docContent, index) => {
-            // 将文档内容分成句子，保留分隔符
-            const sentences = docContent.split(/([。！？.!?])/);
-            
-            // 每两个元素组合成一个完整的句子（包含标点符号）
-            for(let i = 0; i < sentences.length - 1; i += 2) {
-                const sentence = sentences[i] + (sentences[i + 1] || '');
-                if (sentence.trim()) {
-                    // 转义正则表达式中的特殊字符
-                    const escapedSentence = sentence.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escapedSentence, 'g');
-                    
-                    if (processedText.includes(sentence.trim())) {
-                        processedText = processedText.replace(
-                            regex,
-                            (match) => `<span class="reference" data-reference="${docContent}">${match}<sup>[${index + 1}]</sup></span>`
-                        );
-                    }
-                }
+        
+        // 处理引用标记
+        processedText = processedText.replace(/\[(\d+)\]/g, (match, num) => {
+            const index = parseInt(num) - 1;
+            if (index >= 0 && index < references.length) {
+                return `<span class="reference" data-index="${index}">${match}</span>`;
             }
+            return match;
         });
         
         // 处理关键词高亮
@@ -111,4 +99,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return processedText;
     }
-}); 
+    
+    // 添加引用点击事件处理
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('reference')) {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            if (index >= 0 && index < references.length) {
+                const referenceContent = document.getElementById('reference-content');
+                referenceContent.innerHTML = `
+                    <div class="reference-item">
+                        <div class="reference-number">引用 ${index + 1}</div>
+                        <div class="reference-text">${references[index].content}</div>
+                    </div>
+                `;
+            }
+        }
+    });
+});

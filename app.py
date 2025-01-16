@@ -7,7 +7,7 @@ from sentence_transformers import SentenceTransformer
 import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'
+
 socketio = SocketIO(app, 
                    cors_allowed_origins="*",
                    async_mode='threading',
@@ -32,11 +32,10 @@ client = weaviate.Client(
     timeout_config=(5, 60)
 )
 
-# 创建 schema（如果还没有创建）
 def create_schema():
     schema = {
         "class": "Document",
-        "vectorizer": "text2vec-transformers",  # 使用默认的向量化器
+        "vectorizer": "text2vec-base-chinese",  # 使用默认的向量化器
         "properties": [
             {
                 "name": "content",
@@ -60,7 +59,7 @@ def create_schema():
 # 调用创建 schema
 create_schema()
 
-def search_knowledge_base(query, limit=3):
+def search_knowledge_base(query, limit=5):
     try:
         # 使用 encoder 生成查询向量
         query_vector = encoder.encode(query).tolist()
@@ -71,7 +70,7 @@ def search_knowledge_base(query, limit=3):
             .get("Document", ["content", "source"])
             .with_near_vector({
                 "vector": query_vector,
-                "certainty": 0.85  # 设置相似度阈值
+                "certainty": 0.85  # 相似度阈值
             })
             .with_limit(limit)
             .do()
@@ -136,7 +135,7 @@ def handle_message(question):
             prompt = f"""基于以下参考文档回答问题。要求：
                         1. 如果答案中包含参考文档的内容，请用[数字]的格式标注，数字表示是第几个参考文档
                         2. 如果问题无法从参考文档中得到完整答案，可以结合你的知识进行补充
-                        3. 答案要准确、简洁
+                        3. 答案要准确、内容要丰富
 
                         参考文档：
                         {context}
@@ -153,7 +152,7 @@ def handle_message(question):
                 prompt=question,
                 stream=True
             )
-        
+        # 流式输出
         last_text = ""
         for chunk in response:
             if chunk.status_code == 200:

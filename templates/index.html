@@ -14,27 +14,24 @@
         </header>
         
         <div class="main-content">
-            <!-- 添加检索结果面板 -->
-            <div class="search-results">
-                <h3>知识库检索结果</h3>
-                <div id="chunks"></div>
+            <div class="side-panel">
+                <div class="search-results">
+                    <h3>知识库检索结果</h3>
+                    <div id="chunks"></div>
+                </div>
             </div>
-            
             <div class="chat-container">
-                <div class="messages" id="messages"></div>
-                
+                <div id="messages" class="messages"></div>
                 <form id="chat-form" class="input-form">
-                    <input 
-                        type="text" 
-                        id="user-input" 
-                        placeholder="请输入您的问题..."
-                        autocomplete="off"
-                    >
-                    <button type="submit">
-                        发送
-                        <span class="button-icon">→</span>
-                    </button>
+                    <input type="text" id="user-input" placeholder="请输入您的问题..." autocomplete="off">
+                    <button type="submit">发送</button>
                 </form>
+            </div>
+            <div class="side-panel">
+                <div class="reference-display">
+                    <h3>引用内容</h3>
+                    <div id="reference-content"></div>
+                </div>
             </div>
         </div>
     </div>
