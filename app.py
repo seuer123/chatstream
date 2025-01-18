@@ -1,10 +1,11 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO, emit
 import dashscope
 import time
 import weaviate
 from sentence_transformers import SentenceTransformer
 import os
+import numpy as np
 
 app = Flask(__name__)
 
@@ -114,6 +115,56 @@ def extract_keywords(text):
         return filtered_keywords[:5]
     return []
 
+def calculate_similarity(text1, text2):
+    embedding1 = encoder.encode(text1, convert_to_tensor=True)
+    embedding2 = encoder.encode(text2, convert_to_tensor=True)
+    # 计算余弦相似度
+    similarity = float(np.dot(embedding1, embedding2) / 
+                      (np.linalg.norm(embedding1) * np.linalg.norm(embedding2)))
+    return similarity
+
+@socketio.on('calculate_similarities')
+def handle_similarity_calculation(data):
+    try:
+        # 获取当前引用标记对应的文本（即包含[数字]的那句话）
+        current_text = data['current_text']
+        reference_sentences = data['sentences']
+        
+        # 计算每个句子与当前文本的相似度
+        similarities = []
+        max_similarity = 0
+        max_similarity_index = 0
+        
+        for i, sentence in enumerate(reference_sentences):
+            if sentence.strip():
+                similarity = calculate_similarity(current_text, sentence)
+                similarities.append({
+                    'sentence': sentence,
+                    'similarity': similarity
+                })
+                # 记录最高相似度及其索引
+                if similarity > max_similarity:
+                    max_similarity = similarity
+                    max_similarity_index = i
+        
+        # 标记最相似的句子
+        result = []
+        for i, item in enumerate(similarities):
+            result.append({
+                'sentence': item['sentence'],
+                'similarity': item['similarity'],
+                'is_most_similar': (i == max_similarity_index)
+            })
+        
+        # 发送相似度结果回前端
+        emit('similarity_results', {
+            'results': result,
+            'max_similarity': max_similarity
+        })
+    except Exception as e:
+        print(f"Error calculating similarities: {e}")
+        emit('error', str(e))
+
 @socketio.on('message')
 def handle_message(question):
     try:
@@ -136,6 +187,7 @@ def handle_message(question):
                         1. 如果答案中包含参考文档的内容，请用[数字]的格式标注，数字表示是第几个参考文档
                         2. 如果问题无法从参考文档中得到完整答案，可以结合你的知识进行补充
                         3. 答案要准确、内容要丰富
+                        4. 每个参考文档的内容都要用到
 
                         参考文档：
                         {context}
