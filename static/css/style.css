@@ -121,10 +121,38 @@ body {
 }
 
 /* 引用和高亮样式 */
-.highlight {
-    background-color: rgba(255, 223, 0, 0.4);
+.highlight-predefined {
+    background-color: rgba(255, 140, 0, 0.3);  /* 橙色 */
     border-radius: 3px;
     padding: 0 2px;
+    cursor: help;
+    position: relative;
+    display: inline-block;
+}
+
+.highlight-question {
+    background-color: rgba(255, 223, 0, 0.4);  /* 黄色 */
+    border-radius: 3px;
+    padding: 0 2px;
+    cursor: help;
+    position: relative;
+    display: inline-block;
+}
+
+.highlight-predefined:hover::after,
+.highlight-question:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
 }
 
 .reference {

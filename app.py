@@ -16,10 +16,23 @@ socketio = SocketIO(app,
 
 dashscope.api_key = "sk-d6947f9dfbe04c068a6aea1bfe13461c"
 
+# 读取关键词文件
+def load_keywords():
+    keywords_path = os.path.join(os.path.dirname(__file__), 'static', 'keywords.txt')
+    try:
+        with open(keywords_path, 'r', encoding='utf-8') as f:
+            return [line.strip() for line in f if line.strip()]
+    except Exception as e:
+        print(f"Error loading keywords: {e}")
+        return []
+
+# 全局关键词列表
+KEYWORDS = load_keywords()
+
 @app.route('/')
 def index():
     return render_template('index.html')
-dashscope.api_key = "sk-d6947f9dfbe04c068a6aea1bfe13461c"
+
 LOCAL_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'text2vec-base-chinese')
 print("正在加载本地模型，请稍候...")
 encoder = SentenceTransformer(LOCAL_MODEL_PATH)
@@ -168,9 +181,14 @@ def handle_similarity_calculation(data):
 @socketio.on('message')
 def handle_message(question):
     try:
-        # 提取关键词
-        keywords = extract_keywords(question)
-        emit('keywords', keywords)
+        # 提取问题中的关键词
+        question_keywords = extract_keywords(question)
+        
+        # 发送两种关键词到前端
+        emit('keywords', {
+            'predefinedKeywords': KEYWORDS,  # 预定义关键词
+            'questionKeywords': question_keywords  # 问题关键词
+        })
         
         # 搜索知识库
         relevant_docs = search_knowledge_base(question)

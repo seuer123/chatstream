@@ -12,7 +12,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     socket.on('keywords', function(data) {
-        keywords = data;
+        if (Array.isArray(data)) {
+            keywords = data;  // 预定义关键词
+        } else if (data && typeof data === 'object') {
+            keywords = data.predefinedKeywords || [];  // 预定义关键词
+            window.questionKeywords = data.questionKeywords || [];  // 问题关键词
+        }
     });
     
     socket.on('references', function(data) {
@@ -115,14 +120,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // 将 citationMap 存储在 window 对象中，以便后续使用
         window.citationMap = citationMap;
         
-        // 处理关键词高亮
-        keywords.forEach(keyword => {
+        // 处理预定义关键词高亮（橙色），按照关键词长度降序排序
+        const sortedKeywords = [...keywords].sort((a, b) => b.length - a.length);
+        
+        sortedKeywords.forEach(keyword => {
             if (keyword && keyword.length > 0) {
                 const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedKeyword, 'g');
                 processedText = processedText.replace(
-                    regex, 
-                    `<span class="highlight">${keyword}</span>`
+                    regex,
+                    `<span class="highlight-predefined" title="预定义关键词">${keyword}</span>`
+                );
+            }
+        });
+        
+        // 处理问题中的关键词高亮（黄色）
+        const questionKeywords = window.questionKeywords || [];
+        const sortedQuestionKeywords = [...questionKeywords].sort((a, b) => b.length - a.length);
+        
+        sortedQuestionKeywords.forEach(keyword => {
+            if (keyword && keyword.length > 0) {
+                const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedKeyword, 'g');
+                processedText = processedText.replace(
+                    regex,
+                    `<span class="highlight-question" title="问题关键词">${keyword}</span>`
                 );
             }
         });
